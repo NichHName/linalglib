@@ -10,73 +10,79 @@
 #include <utility>
 
 namespace linalglib {
-
-    Matrix::Matrix(size_t rows, size_t cols) : nrows(rows), ncols(cols) {
+    template <typename T>
+    Matrix<T>::Matrix(size_t rows, size_t cols) : nrows(rows), ncols(cols) {
         data.resize(rows * cols, 0.0);
     }
 
-    Matrix::Matrix(std::vector<double> data, size_t rows, size_t cols) : data(data), nrows(rows), ncols(cols) {
+    template <typename T>
+    Matrix<T>::Matrix(std::vector<T> data, size_t rows, size_t cols) : data(data), nrows(rows), ncols(cols) {
         if (data.size() != rows * cols) {
             throw std::invalid_argument("Data size does not match matrix dimensions.");
         }
     }
 
-    size_t Matrix::getRows() const {
+    template <typename T>
+    size_t Matrix<T>::getRows() const {
         return nrows;
     }
 
-    size_t Matrix::getCols() const {
+    template <typename T>
+    size_t Matrix<T>::getCols() const {
         return ncols;
     }
 
-    double& Matrix::operator()(size_t i, size_t j) {
+    template <typename T>
+    T& Matrix<T>::operator()(size_t i, size_t j) {
         if (i >= nrows || j >= ncols) {
             throw std::out_of_range("Index out of range.");
         }
         return data[i * ncols + j];
     }
 
-    double Matrix::operator()(size_t i, size_t j) const {
+    template <typename T>
+    const T& Matrix<T>::operator()(size_t i, size_t j) const {
         if (i >= nrows || j >= ncols) {
             throw std::out_of_range("Index out of range.");
         }
         return data[i * ncols + j];
     }
 
-    double innerProduct(const std::vector<double>& a, std::vector<double> b) {
+    template <typename T>
+    T innerProduct(const std::vector<T>& a, std::vector<T> b) {
         if (a.size() != b.size()) {
             throw std::invalid_argument("Vectors must be of the same length.");
         }
-        double result = 0.0;
+        T result = 0.0;
         for (size_t i = 0; i < a.size(); ++i) {
             result += a[i] * b[i];
         }
         return result;
     }
 
-    double norm(const std::vector<double>& v) {
-        double sumSquares = 0.0;
-        for (double val : v) {
-            sumSquares += val * val;
-        }
-        return std::sqrt(sumSquares);
+    template <typename T>
+    double norm(const std::vector<T>& v) {
+        double ip = innerProduct(v, v);
+        return std::sqrt(ip);
     }
 
-    Matrix createIdentity(size_t n) {
-        Matrix I(n, n);
+    template <typename T>
+    Matrix<T> Matrix<T>::identity(size_t n) {
+        Matrix<T> I(n, n);
         for (size_t i = 0; i < n; ++i) {
             for (size_t j = 0; j < n; ++j) {
-                I(i, j) = (i == j) ? 1.0 : 0.0;
+                I(i, j) = (i == j) ? T(1) : T(0);
             }
         }
         return I;
     }
 
-    std::vector<double> matvec(const Matrix& a, const std::vector<double>& x) {
+    template <typename T>
+    std::vector<T> matvec(const Matrix<T>& a, const std::vector<T>& x) {
         if (a.getCols() != x.size()) {
             throw std::invalid_argument("Matrix columns must match vector size.");
         }
-        std::vector<double> result(a.getRows(), 0.0);
+        std::vector<T> result(a.getRows(), 0.0);
         for (size_t i = 0; i < a.getRows(); ++i) {
             for (size_t j = 0; j < a.getCols(); ++j) {
                 result[i] += a(i, j) * x[j];
@@ -85,11 +91,12 @@ namespace linalglib {
         return result;
     }
 
-    Matrix matmul(const Matrix& a, const Matrix& b) {
+    template <typename T>
+    Matrix<T> matmul(const Matrix<T>& a, const Matrix<T>& b) {
         if (a.getCols() != b.getRows()) {
             throw std::invalid_argument("Matrix A columns must match Matrix B rows.");
         }
-        Matrix result(a.getRows(), b.getCols());
+        Matrix<T> result(a.getRows(), b.getCols());
         for (size_t i = 0; i < a.getRows(); ++i) {
             for (size_t j = 0; j < b.getCols(); ++j) {
                 for (size_t k = 0; k < a.getCols(); ++k) {
@@ -100,8 +107,9 @@ namespace linalglib {
         return result;
     }
 
-    Matrix transpose(const Matrix& a) {
-        Matrix result(a.getCols(), a.getRows());
+    template <typename T>
+    Matrix<T> transpose(const Matrix<T>& a) {
+        Matrix<T> result(a.getCols(), a.getRows());
         for (size_t i = 0; i < a.getRows(); ++i) {
             for (size_t j = 0; j < a.getCols(); ++j) {
                 result(j, i) = a(i, j);
@@ -110,18 +118,20 @@ namespace linalglib {
         return result;
     }
 
-    Matrix conjugateTranspose(const Matrix& a) {
-        Matrix result(a.getCols(), a.getRows());
+    template <typename T>
+    Matrix<T> conjugateTranspose(const Matrix<T>& a) {
+        Matrix<T> result(a.getCols(), a.getRows());
         for (size_t i = 0; i < a.getRows(); ++i) {
             for (size_t j = 0; j < a.getCols(); ++j) {
-                result(j, i) = a(i, j); // Need to fix this to handle complex numbers
+                result(j, i) =  std::conj(a(i, j));
             }
         }
         return result;
     }
 
-    std::vector<std::vector<double>> getColumns(const Matrix& a) {
-        std::vector<std::vector<double>> columns(a.getCols(), std::vector<double>(a.getRows()));
+    template <typename T>
+    std::vector<std::vector<T>> getColumns(const Matrix<T>& a) {
+        std::vector<std::vector<T>> columns(a.getCols(), std::vector<T>(a.getRows()));
         for (size_t i = 0; i < a.getRows(); ++i) {
             for (size_t j = 0; j < a.getCols(); ++j) {
                 columns[j][i] = a(i, j);
@@ -130,14 +140,15 @@ namespace linalglib {
         return columns;
     }
 
-    std::pair<Matrix, Matrix> qrDecomposition(const Matrix& a) {
+    template <typename T>
+    std::pair<Matrix<T>, Matrix<T>> qrDecomposition(const Matrix<T>& a) {
         size_t rows = a.getRows();
         size_t cols = a.getCols();
         
         // Initialize Q and R with zeros. 
         // R is always a square matrix (cols x cols).
-        Matrix q(rows, cols); 
-        Matrix r(cols, cols); 
+        Matrix<T> q(rows, cols); 
+        Matrix<T> r(cols, cols); 
 
         for (size_t i = 0; i < cols; ++i) {
             
@@ -185,9 +196,10 @@ namespace linalglib {
         return {q, r};
     }
 
-    std::pair<std::vector<double>, Matrix> findEigen(Matrix a, int iterations = 100) {
+    template <typename T>
+    std::pair<std::vector<T>, Matrix<T>> findEigen(Matrix<T> a, int iterations) {
         size_t n = a.getRows();
-        Matrix v = createIdentity(n);
+        Matrix<T> v = Matrix<T>::identity(n);
 
         for (int k = 0; k < iterations; ++k) {
             // 1. Decompose the current matrix A
@@ -201,7 +213,7 @@ namespace linalglib {
         }
 
         // Eigenvalues are on the main diagonal
-        std::vector<double> eigenvalues(n);
+        std::vector<T> eigenvalues(n);
         for (size_t i = 0; i < n; ++i) {
             eigenvalues[i] = a(i, i);
         }
@@ -210,18 +222,20 @@ namespace linalglib {
         return {eigenvalues, v};
     }
 
-    std::tuple<Matrix, Matrix, Matrix> svd(const Matrix& a) {
-        Matrix u(a.getRows(), a.getRows());
-        Matrix s(a.getRows(), a.getCols());
-        Matrix vt(a.getCols(), a.getCols());
+    template <typename T>
+    std::tuple<Matrix<T>, Matrix<double>, Matrix<T>> svd(const Matrix<T>& a) {
+        Matrix<T> u(a.getRows(), a.getRows());
+        Matrix<double> s(a.getRows(), a.getCols());
+        Matrix<T> vt(a.getCols(), a.getCols());
 
         // NOT IMPLEMENTED YET
     }
 
-    std::tuple<Matrix, Matrix, Matrix> svdTruncated(const Matrix& a, size_t k) {
-        Matrix u(a.getRows(), k);
-        Matrix s(k, k);
-        Matrix vt(k, a.getCols());
+    template <typename T>
+    std::tuple<Matrix<T>, Matrix<double>, Matrix<T>> svdTruncated(const Matrix<T>& a, size_t k) {
+        Matrix<T> u(a.getRows(), k);
+        Matrix<double> s(k, k);
+        Matrix<T> vt(k, a.getCols());
 
         // NOT IMPLEMENTED YET
     }

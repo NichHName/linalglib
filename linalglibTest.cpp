@@ -1,10 +1,12 @@
 #include <iostream>
 #include "linalglib.cpp"
 #include <vector>
+#include <complex>
+#include <stdexcept>
 
 int main() {
     // Declarations
-    linalglib::Matrix A(2, 3);
+    linalglib::Matrix<double> A(2, 3);
     A(0, 0) = 1.0;
     A(0, 1) = 2.0;
     A(0, 2) = 3;
@@ -17,6 +19,10 @@ int main() {
 
     std::vector<double> matrixe = {17.0, 117.0, 2005.0, 2004.0};
     linalglib::Matrix E(matrixe, 2, 2);
+
+    // Complex matrix
+    std::vector<std::complex<double>> matrixg = { {1.0, 2}, {3, 5}, {4, -2}, {6, 0} };
+    linalglib::Matrix G(matrixg, 2, 2);
 
     std::vector<double> v1 = {1.0, 6.0, -3.0};
     std::vector<double> v2 = {4.0, 0.0, 7.0};
@@ -65,6 +71,44 @@ int main() {
     for (size_t i = 0; i < F.getRows(); i++) {
         for (size_t j = 0; j < F.getCols(); j++) {
             std::cout << F(i, j) << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    linalglib::Matrix H = linalglib::transpose(A);
+    std::cout << "Transpose of A: " << std::endl;
+    for (size_t i = 0; i < H.getRows(); i++) {
+        for (size_t j = 0; j < H.getCols(); j++) {
+            std::cout << H(i, j) << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    // Complex Testing
+    std::cout << "Complex matrix G:" << std::endl;
+    for (size_t i = 0; i < G.getRows(); i++) {
+        for (size_t j = 0; j < G.getCols(); j++) {
+            std::cout << G(i, j) << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    // G transpose, G conjugate transpose
+    linalglib:: Matrix Gt = linalglib::transpose(G);
+    linalglib:: Matrix Gct = linalglib::conjugateTranspose(G);
+
+    std::cout << "Regular transpose of G:" << std::endl;
+    for (size_t i = 0; i < Gt.getRows(); i++) {
+        for (size_t j = 0; j < Gt.getCols(); j++) {
+            std::cout << Gt(i, j) << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    std::cout << "Conjugate transpose of G:" << std::endl;
+    for (size_t i = 0; i < Gct.getRows(); i++) {
+        for (size_t j = 0; j < Gct.getCols(); j++) {
+            std::cout << Gct(i, j) << " ";
         }
         std::cout << std::endl;
     }
