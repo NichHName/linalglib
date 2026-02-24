@@ -6,35 +6,29 @@
 
 int main() {
     // Declarations
-    linalglib::Matrix<double> A(2, 3);
+    linalglib::Matrix<double> A(2, 3); // Testing this way of defining a matrix
     A(0, 0) = 1.0;
     A(0, 1) = 2.0;
     A(0, 2) = 3;
     A(1, 0) = 4.0;
     A(1, 1) = 5.0;
     A(1, 2) = 6.0;
-
-    std::vector<double> matrixb = {5, 3, -10, 7, 2, 1};
+    std::vector<double> matrixb = {5, 3, -10, 7, 2, 1}; // Testing the way better of making a matrix
     linalglib::Matrix B(matrixb, 3, 2);
 
-    std::vector<double> matrixe = {17.0, 117.0, 2005.0, 2004.0};
-    linalglib::Matrix E(matrixe, 2, 2);
+    std::vector<double> matrixc = {17.0, 117.0, 2005.0, 2004.0};
+    linalglib::Matrix C(matrixc, 2, 2);
 
     // Complex matrix
-    std::vector<std::complex<double>> matrixg = { {1.0, 2}, {3, 5}, {4, -2}, {6, 0} };
-    linalglib::Matrix G(matrixg, 2, 2);
+    std::vector<std::complex<double>> matrixd = { {1.0, 2}, {3, 5}, {4, -2}, {6, 0} };
+    linalglib::Matrix D(matrixd, 2, 2);
 
     std::vector<double> v1 = {1.0, 6.0, -3.0};
     std::vector<double> v2 = {4.0, 0.0, 7.0};
 
     // 1. Test matrix construction and element access
     std::cout << "Matrix A:" << std::endl;
-    for (size_t i = 0; i < A.getRows(); ++i) {
-        for (size_t j = 0; j < A.getCols(); ++j) {
-            std::cout << A(i, j) << " ";
-        }
-        std::cout << std::endl;
-    }
+    displayMatrix(A);
 
     // 2. Test inner product
     double ip = linalglib::innerProduct(v1, v2);
@@ -48,68 +42,41 @@ int main() {
     std::cout << "Matrix-vector product A * v2: [" << mv_result2[0] << "  " << mv_result2[1] << "]" << std::endl;
 
     // 4. Test matrix-matrix multiplication
-    linalglib::Matrix C = linalglib::matmul(A, B);
+    linalglib::Matrix AB = linalglib::matmul(A, B);
     std::cout << "Matrix-matrix product AB: " << std::endl;
-    for (size_t i = 0; i < C.getRows(); i++) {
-        for (size_t j = 0; j < C.getCols(); j++) {
-            std::cout << C(i, j) << " ";
-        }
-        std::cout << std::endl;
-    }
+    displayMatrix(AB);
 
-    linalglib::Matrix D = linalglib::matmul(B, A);
+    linalglib::Matrix BA = linalglib::matmul(B, A);
     std::cout << "Matrix-matrix product BA: " << std::endl;
-    for (size_t i = 0; i < D.getRows(); i++) {
-        for (size_t j = 0; j < D.getCols(); j++) {
-            std::cout << D(i, j) << " ";
-        }
-        std::cout << std::endl;
-    }
+    displayMatrix(BA);
 
-    linalglib::Matrix F = linalglib::matmul(B, E);
+    linalglib::Matrix BC = linalglib::matmul(B, C);
     std::cout << "Matrix-matrix product BE: " << std::endl;
-    for (size_t i = 0; i < F.getRows(); i++) {
-        for (size_t j = 0; j < F.getCols(); j++) {
-            std::cout << F(i, j) << " ";
-        }
-        std::cout << std::endl;
-    }
+    displayMatrix(BC);
 
-    linalglib::Matrix H = linalglib::transpose(A);
+    linalglib::Matrix At = linalglib::transpose(A);
     std::cout << "Transpose of A: " << std::endl;
-    for (size_t i = 0; i < H.getRows(); i++) {
-        for (size_t j = 0; j < H.getCols(); j++) {
-            std::cout << H(i, j) << " ";
-        }
-        std::cout << std::endl;
-    }
+    displayMatrix(At);
 
     // Complex Testing
-    std::cout << "Complex matrix G:" << std::endl;
-    for (size_t i = 0; i < G.getRows(); i++) {
-        for (size_t j = 0; j < G.getCols(); j++) {
-            std::cout << G(i, j) << " ";
-        }
-        std::cout << std::endl;
-    }
+    std::cout << "Complex matrix D:" << std::endl;
+    displayMatrix(D);
 
     // G transpose, G conjugate transpose
-    linalglib:: Matrix Gt = linalglib::transpose(G);
-    linalglib:: Matrix Gct = linalglib::conjugateTranspose(G);
+    linalglib:: Matrix Dt = linalglib::transpose(D);
+    linalglib:: Matrix Dct = linalglib::conjugateTranspose(D);
 
-    std::cout << "Regular transpose of G:" << std::endl;
-    for (size_t i = 0; i < Gt.getRows(); i++) {
-        for (size_t j = 0; j < Gt.getCols(); j++) {
-            std::cout << Gt(i, j) << " ";
-        }
-        std::cout << std::endl;
-    }
+    std::cout << "Regular transpose of D:" << std::endl;
+    displayMatrix(Dt);
 
-    std::cout << "Conjugate transpose of G:" << std::endl;
-    for (size_t i = 0; i < Gct.getRows(); i++) {
-        for (size_t j = 0; j < Gct.getCols(); j++) {
-            std::cout << Gct(i, j) << " ";
-        }
-        std::cout << std::endl;
-    }
+    std::cout << "Conjugate transpose of D:" << std::endl;
+    displayMatrix(Dct);
+
+    // Test findEigen
+    std::pair<std::vector<double>, linalglib::Matrix<double>> eigenResult = findEigen(C);
+
+    std::vector<double> eigenvalC = eigenResult.first;
+
+    std::cout << "Eigenvalues of C:" << std::endl;
+    linalglib::displayVector(eigenvalC);
 }

@@ -49,6 +49,26 @@ namespace linalglib {
     }
 
     template <typename T>
+    void displayMatrix(const Matrix<T>& a) {
+        for (size_t i = 0; i < a.getRows(); i++) {
+            for (size_t j = 0; j < a.getCols(); j++) {
+                std::cout << a(i, j) << " ";
+            }
+            std::cout << std::endl;
+        }
+    }
+
+    template <typename T>
+    void displayVector(const std::vector<T>& v) {
+        std::cout << "[";
+        for (size_t i = 0; i < v.size(); ++i) {
+            std::cout << v[i];
+            if (i < v.size() - 1) std::cout << ", ";
+        }
+        std::cout << "]" << std::endl;
+    }
+
+    template <typename T>
     T innerProduct(const std::vector<T>& a, std::vector<T> b) {
         if (a.size() != b.size()) {
             throw std::invalid_argument("Vectors must be of the same length.");
