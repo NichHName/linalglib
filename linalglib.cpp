@@ -8,6 +8,7 @@
 #include <cmath>
 #include <complex>
 #include <utility>
+#include <algorithm>
 
 namespace linalglib {
     template <typename T>
@@ -69,7 +70,7 @@ namespace linalglib {
     }
 
     template <typename T>
-    T innerProduct(const std::vector<T>& a, std::vector<T> b) {
+    T innerProduct(const std::vector<T>& a, const std::vector<T>& b) {
         if (a.size() != b.size()) {
             throw std::invalid_argument("Vectors must be of the same length.");
         }
@@ -143,7 +144,11 @@ namespace linalglib {
         Matrix<T> result(a.getCols(), a.getRows());
         for (size_t i = 0; i < a.getRows(); ++i) {
             for (size_t j = 0; j < a.getCols(); ++j) {
-                result(j, i) =  std::conj(a(i, j));
+                if constexpr (std::is_same_v<T, std::complex<double>> || std::is_same_v<T, std::complex<float>>) {
+                    result(j, i) = std::conj(a(i, j));
+                } else {
+                    result(j, i) = a(i, j);
+                }
             }
         }
         return result;
@@ -164,51 +169,41 @@ namespace linalglib {
     std::pair<Matrix<T>, Matrix<T>> qrDecomposition(const Matrix<T>& a) {
         size_t rows = a.getRows();
         size_t cols = a.getCols();
-        
-        // Initialize Q and R with zeros. 
-        // R is always a square matrix (cols x cols).
-        Matrix<T> q(rows, cols); 
-        Matrix<T> r(cols, cols); 
+
+        Matrix<T> q(rows, cols);
+        Matrix<T> r(cols, cols);
+
+        // Extract columns into a format compatible with your helper functions
+        std::vector<std::vector<T>> columns = getColumns(a);
+        std::vector<std::vector<T>> q_columns(cols, std::vector<T>(rows));
 
         for (size_t i = 0; i < cols; ++i) {
-            
-            // 1. Copy the i-th column from 'a' directly into 'q'
-            for (size_t k = 0; k < rows; ++k) {
-                q(k, i) = a(k, i);
-            }
+            // Start with the original column vector
+            std::vector<T> v = columns[i];
 
-            // 2. Subtract the projection of previously computed columns
+            // Orthogonalize against all previous vectors in the basis
             for (size_t j = 0; j < i; ++j) {
+                // Use your innerProduct function to find the projection coefficient
+                T projection_coeff = innerProduct(q_columns[j], columns[i]);
                 
-                // Calculate projection coefficient
-                double dotProduct = 0.0;
-                for (size_t k = 0; k < rows; ++k) {
-                    dotProduct += q(k, i) * q(k, j);
-                }
+                r(j, i) = projection_coeff;
 
-                // STORE IN R: The projection coefficient goes above the diagonal
-                r(j, i) = dotProduct;
-
-                // Subtract the projection
+                // Subtract the projection: v = v - (q_j * proj)
                 for (size_t k = 0; k < rows; ++k) {
-                    q(k, i) -= dotProduct * q(k, j);
+                    v[k] -= projection_coeff * q_columns[j][k];
                 }
             }
 
-            // 3. Normalize the current column
-            double normSq = 0.0;
-            for (size_t k = 0; k < rows; ++k) {
-                normSq += q(k, i) * q(k, i);
-            }
-            
-            double norm = std::sqrt(normSq);
-            // STORE IN R: The normalization factor goes exactly on the diagonal
-            r(i, i) = norm;
-            
-            // Prevent division by zero
-            if (norm > 1e-12) { 
+            // Use your norm function to find the length of the orthogonalized vector
+            double magnitude = norm(v);
+            r(i, i) = static_cast<T>(magnitude);
+
+            // Normalize and store back in Q
+            if (magnitude > 1e-12) {
                 for (size_t k = 0; k < rows; ++k) {
-                    q(k, i) /= norm;
+                    T normalized_val = v[k] / static_cast<T>(magnitude);
+                    q_columns[i][k] = normalized_val;
+                    q(k, i) = normalized_val;
                 }
             }
         }
@@ -244,19 +239,115 @@ namespace linalglib {
 
     template <typename T>
     std::tuple<Matrix<T>, Matrix<double>, Matrix<T>> svd(const Matrix<T>& a) {
-        Matrix<T> u(a.getRows(), a.getRows());
-        Matrix<double> s(a.getRows(), a.getCols());
-        Matrix<T> vt(a.getCols(), a.getCols());
+        size_t m = a.getRows();
+        size_t n = a.getCols();
 
-        // NOT IMPLEMENTED YET
+        Matrix<T> u(m, m);
+        Matrix<double> s(m, n);
+        Matrix<T> vt(n, n);
+
+        Matrix<T> conjTrans = conjugateTranspose(a);
+
+        // Compute A*A
+        Matrix<T> a_star_a = matmul(conjTrans, a);
+
+        // Find eigenvalues and eigenvectors of A*A
+        // Number of iterations controls the accuracy of the QR algorithm
+        int iterations = 100; 
+        auto [eigenvalues, v] = findEigen(a_star_a, iterations);
+
+        // V* is the conjugate transpose of V
+        vt = conjugateTranspose(v);
+
+        // 4. Extract columns of V to compute U
+        std::vector<std::vector<T>> v_cols = getColumns(v);
+
+        // Populate S and calculate U
+        for (size_t i = 0; i < n; ++i) {
+            // We use std::abs to ensure we don't pass negative numbers to sqrt 
+            // due to minor floating-point inaccuracies
+            double singular_value = std::sqrt(std::abs(eigenvalues[i]));
+            
+            // Place singular value on the diagonal of S
+            if (i < m) {
+                s(i, i) = singular_value;
+            }
+
+            // Calculate corresponding column, u_i = (A * v_i) / sigma_i
+            if (i < m) {
+                if (singular_value > 1e-12) {
+                    std::vector<T> u_col = matvec(a, v_cols[i]);
+                    for (size_t k = 0; k < m; ++k) {
+                        // Cast singular_value to T to match Matrix<T> types
+                        u(k, i) = u_col[k] / static_cast<T>(singular_value);
+                    }
+                } else {
+                    // For zero singular values, set a standard basis vector 
+                    // (A simplification for educational purposes)
+                    u(i, i) = T(1.0); 
+                }
+            }
+        }
+
+        return {u, s, vt};
     }
 
     template <typename T>
     std::tuple<Matrix<T>, Matrix<double>, Matrix<T>> svdTruncated(const Matrix<T>& a, size_t k) {
-        Matrix<T> u(a.getRows(), k);
-        Matrix<double> s(k, k);
-        Matrix<T> vt(k, a.getCols());
+        size_t m = a.getRows();
+        size_t n = a.getCols();
 
-        // NOT IMPLEMENTED YET
+        // Safety check: k shouldn't exceed the matrix dimensions
+        k = std::min({k, m, n});
+
+        Matrix<T> u(m, k);
+        Matrix<double> s(k, k);
+        Matrix<T> vt(k, n);
+
+        Matrix<T> conjTrans = conjugateTranspose(a);
+
+        // Compute A*A
+        Matrix<T> a_star_a = matmul(conjTrans, a);
+
+        // Find eigenvalues and eigenvectors of A*A
+        int iterations = 100; 
+        auto [eigenvalues, v] = findEigen(a_star_a, iterations);
+
+        // 3. Extract only the first k columns of V to form VT (k x n matrix)
+        for (size_t i = 0; i < k; ++i) {
+            for (size_t j = 0; j < n; ++j) {
+                if constexpr (std::is_same_v<T, std::complex<double>> || std::is_same_v<T, std::complex<float>>) {
+                    vt(i, j) = std::conj(v(j, i));
+                } else {
+                    vt(i, j) = v(j, i);
+                }
+            }
+        }
+
+        // Extract columns of V to compute U
+        std::vector<std::vector<T>> v_cols = getColumns(v);
+
+        // 5. Populate S and calculate U for only the first k components
+        for (size_t i = 0; i < k; ++i) {
+            double singular_value = std::sqrt(std::abs(eigenvalues[i]));
+            
+            // Place singular value on the diagonal of S
+            s(i, i) = singular_value;
+
+            // Calculate corresponding column of U: u_i = (A * v_i) / sigma_i
+            if (singular_value > 1e-12) {
+                std::vector<T> u_col = matvec(a, v_cols[i]);
+                for (size_t row = 0; row < m; ++row) {
+                    u(row, i) = u_col[row] / static_cast<T>(singular_value);
+                }
+            } else {
+                // For zero singular values, set a standard basis vector 
+                if (i < m) {
+                    u(i, i) = T(1.0); 
+                }
+            }
+        }
+
+        return {u, s, vt};
     }
 }

@@ -78,7 +78,7 @@ namespace linalglib {
      * @return The inner product of the two vectors.
      */
     template <typename T>
-    T innerProduct(const std::vector<T>& a, std::vector<T> b);
+    T innerProduct(const std::vector<T>& a, const std::vector<T>& b);
 
     /**
      * @brief Computes the L2 norm of a vector.
