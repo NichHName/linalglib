@@ -9,6 +9,7 @@
 #include <complex>
 #include <utility>
 #include <algorithm>
+#include <type_traits>
 
 namespace linalglib {
     template <typename T>
@@ -70,6 +71,18 @@ namespace linalglib {
     }
 
     template <typename T>
+    std::vector<T> vecAdd(const std::vector<T>& a, const std::vector<T>& b) {
+        if (a.size() != b.size()) {
+            throw std::invalid_argument("Vecotrs must be of the same length.");
+        }
+        std::vector<T> result(a.size(), 0.0);
+        for (size_t i = 0; i < a.size(); ++i) {
+            result[i] = a[i] + b[i];
+        }
+        return result;
+    }
+
+    template <typename T>
     T innerProduct(const std::vector<T>& a, const std::vector<T>& b) {
         if (a.size() != b.size()) {
             throw std::invalid_argument("Vectors must be of the same length.");
@@ -96,6 +109,21 @@ namespace linalglib {
             }
         }
         return I;
+    }
+
+    template <typename T, typename U>
+    Matrix<std::common_type_t<T, U>> matAdd(const Matrix<T>& a, const Matrix<U>& b) {
+        if (a.getRows() != b.getRows() || a.getCols() != b.getCols()) {
+            throw std::invalid_argument("Matrices need to be the same size.");
+        }
+        using r_type = std::common_type_t<T, U>;
+        Matrix<r_type> result(a.getRows(), b.getRows());
+        for (size_t i = 0; i < a.getRows(); ++i) {
+            for (size_t j = 0; j < b.getCols(); ++j) {
+                result(i, j) = a(i, j) + b(i, j);
+            }
+        }
+        return result;
     }
 
     template <typename T>

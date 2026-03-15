@@ -8,6 +8,7 @@
 #include <cmath>
 #include <utility>
 #include <complex>
+#include <type_traits>
 
 namespace linalglib {
 
@@ -72,6 +73,15 @@ namespace linalglib {
     };
 
     /**
+     * @brief Computes the sum of two vectors.
+     * @param a First vector.
+     * @param b Second vector.
+     * @return The sum of the two vectors.
+     */
+    template <typename T>
+    std::vector<T> vecAdd(const std::vector<T>& a, const std::vector<T>& b);
+
+    /**
      * @brief Computes the inner product of two vectors.
      * @param a First vector.
      * @param b Second vector.
@@ -87,6 +97,15 @@ namespace linalglib {
      */
     template <typename T>
     double norm(const std::vector<T>& v);
+
+    /**
+     * @brief Computes the sum of two matrices.
+     * @param a The first matrix.
+     * @param b The second matrix.
+     * @returns The sum of the two matrices.
+     */
+    template <typename T, typename U>
+    Matrix<std::common_type_t<T, U>> matAdd(const Matrix<T>& a, const Matrix<U>& b);
 
     /**
      * @brief Multiplies a vector by a matrix on the left.
